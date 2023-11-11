@@ -1,51 +1,30 @@
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 
 public class Main {
+    private static final String SRC_FOLDER = "data/source";
+    private static final String DST_FOLDER = "data/dst";
+    private static final int CORES_NUMB = Runtime.getRuntime().availableProcessors();
+    private static int newWidth = 300;
 
     public static void main(String[] args) {
-        String srcFolder = "data/source";
-        String dstFolder = "data/dst";
-
-        File srcDir = new File(srcFolder);
-
+        File srcDir = new File(SRC_FOLDER);
         long start = System.currentTimeMillis();
-
         File[] files = srcDir.listFiles();
 
-        try {
-            for (File file : files) {
-                BufferedImage image = ImageIO.read(file);
-                if (image == null) {
-                    continue;
-                }
+        assert files != null;
+        int oneThreadFilesCount = files.length / CORES_NUMB;
+        int additionalFiles = files.length % CORES_NUMB;
 
-                int newWidth = 300;
-                int newHeight = (int) Math.round(
-                    image.getHeight() / (image.getWidth() / (double) newWidth)
-                );
-                BufferedImage newImage = new BufferedImage(
-                    newWidth, newHeight, BufferedImage.TYPE_INT_RGB
-                );
+        for (int i = 0; i < CORES_NUMB; i++) {
+            File[] filesToCopy;
+            int filesToCopyCount = (i == CORES_NUMB - 1) ?
+                    oneThreadFilesCount + additionalFiles : oneThreadFilesCount;
 
-                int widthStep = image.getWidth() / newWidth;
-                int heightStep = image.getHeight() / newHeight;
+            filesToCopy = new File[filesToCopyCount];
+            System.arraycopy(files, i * oneThreadFilesCount, filesToCopy, 0, filesToCopyCount);
 
-                for (int x = 0; x < newWidth; x++) {
-                    for (int y = 0; y < newHeight; y++) {
-                        int rgb = image.getRGB(x * widthStep, y * heightStep);
-                        newImage.setRGB(x, y, rgb);
-                    }
-                }
-
-                File newFile = new File(dstFolder + "/" + file.getName());
-                ImageIO.write(newImage, "jpg", newFile);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            ImageResizer resizer = new ImageResizer(filesToCopy, newWidth, DST_FOLDER, start);
+            new Thread(resizer).start();
         }
-
-        System.out.println("Duration: " + (System.currentTimeMillis() - start));
     }
 }
