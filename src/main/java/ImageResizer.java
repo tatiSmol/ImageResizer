@@ -2,7 +2,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
-public class ImageResizer implements Runnable {
+public class ImageResizer implements Runnable, ResizerStrategy {
     private File[] files;
     private int newWidth;
     private String dstFolder;
@@ -17,6 +17,13 @@ public class ImageResizer implements Runnable {
 
     @Override
     public void run() {
+        resize();
+        System.out.println("Finished " + Thread.currentThread().getName()
+                + " after start: " + (System.currentTimeMillis() - start) + "ms");
+    }
+
+    @Override
+    public void resize() {
         try {
             for (File file : files) {
                 BufferedImage image = ImageIO.read(file);
@@ -47,8 +54,5 @@ public class ImageResizer implements Runnable {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
-        System.out.println("Finished " + Thread.currentThread().getName()
-                + " after start: " + (System.currentTimeMillis() - start) + "ms");
     }
 }
